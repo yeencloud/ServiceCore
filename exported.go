@@ -1,7 +1,6 @@
 package ServiceCore
 
 import (
-	"errors"
 	"fmt"
 	"github.com/rs/zerolog/log"
 	"go/token"
@@ -70,14 +69,12 @@ func (server *Server) register(rcvr any, name string, useName bool) error {
 		sname = reflect.Indirect(s.Rcvr).Type().Name()
 	}
 	if sname == "" {
-		err := errors.New("no service name for type")
-		log.Err(err).Str("type", s.Typ.String())
-		return err
+		log.Err(errNoServiceNameForType).Str("type", s.Typ.String())
+		return errNoServiceNameForType
 	}
 	if !useName && !token.IsExported(sname) {
-		err := errors.New("type is not exported")
-		log.Err(err).Str("type", sname)
-		return err
+		log.Err(errTypeIsNotExported).Str("type", sname)
+		return errTypeIsNotExported
 	}
 	s.Name = sname
 
@@ -85,17 +82,14 @@ func (server *Server) register(rcvr any, name string, useName bool) error {
 	s.Method = suitableMethods(s.Typ)
 
 	if len(s.Method) == 0 {
-
 		method := suitableMethods(reflect.PointerTo(s.Typ))
-		err := errors.New("type has no suitable exported methods")
-		log.Err(err).Int("method", len(s.Method)).Int("pointedMethods", len(method)).Str("type", sname)
-		return err
+		log.Err(errTypeHasNoSuitableExportedMethods).Int("method", len(s.Method)).Int("pointedMethods", len(method)).Str("type", sname)
+		return errTypeHasNoSuitableExportedMethods
 	}
 
 	if _, dup := server.serviceMap.LoadOrStore(sname, s); dup {
-		err := errors.New("service already defined")
-		log.Err(err).Int("method", len(s.Method)).Str("service", sname)
-		return err
+		log.Err(errServiceAlreadyDefined).Int("method", len(s.Method)).Str("service", sname)
+		return errServiceAlreadyDefined
 	}
 	return nil
 }
