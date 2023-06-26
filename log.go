@@ -10,8 +10,8 @@ import (
 
 // we are using zero log for logging
 // it helps us logging in either json or console format depending on the environment as well as logging the file and line number for debugging purposes
-func SetupLogging() {
-	isDev := isDevelopment()
+func (sh *ServiceHost) setupLogging() {
+	isDev := sh.Config.IsDevelopment()
 
 	if isDev {
 		zerolog.SetGlobalLevel(zerolog.InfoLevel)

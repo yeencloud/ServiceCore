@@ -3,8 +3,12 @@ package ServiceCore
 import "errors"
 
 var (
-	errNoServiceNameForType             = errors.New("no service name for type")
-	errTypeIsNotExported                = errors.New("type is not exported")
-	errTypeHasNoSuitableExportedMethods = errors.New("type has no suitable exported methods")
-	errServiceAlreadyDefined            = errors.New("service already defined")
+	ErrVersionMismatch  = errors.New("version mismatch")
+	ErrRequestIsMissing = errors.New("request is missing")
+	ErrUnknownMethod    = errors.New("unknown method")
+	ErrorUnknownModule  = errors.New("unknown module")
+	ErrRequestMalformed = errors.New("request is malformed")
+	ErrMethodIsInvalid  = errors.New("method is invalid")
+	ErrServiceIsInvalid = errors.New("service is invalid")
+	ErrValidationFailed = errors.New("validation failed")
 )

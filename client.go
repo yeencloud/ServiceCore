@@ -1,97 +1,64 @@
 package ServiceCore
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
-	"github.com/AliceDiNunno/KubernetesUtil"
-	"github.com/rs/zerolog/log"
-	"net"
+	"github.com/davecgh/go-spew/spew"
+	"io/ioutil"
 	"net/http"
-	"net/rpc"
 	"os"
 )
 
-type GalaxyClient struct {
-	Version int
-
-	ClientHost string
-	ClientPort int
-
-	client *rpc.Client
-}
-
-func NewGalaxyClientWithAddress(galaxyAddress string) (*GalaxyClient, error) {
-	log.Info().Str("address", galaxyAddress).Msg("Connecting to Galaxy")
-	client, err := rpc.DialHTTP("tcp", galaxyAddress)
+func (sh *ServiceHost) Call(service string, method string, args any) (map[string]interface{}, error) {
+	marshal, err := json.Marshal(args)
 	if err != nil {
-		return nil, err
+		return map[string]interface{}{}, err
 	}
 
-	return &GalaxyClient{
+	var response map[string]interface{}
+	err = json.Unmarshal(marshal, &response)
+	if err != nil {
+		return map[string]interface{}{}, err
+	}
+
+	serverPort := 8000
+
+	requestURL := fmt.Sprintf("http://localhost:%d/rpc/", serverPort)
+
+	b, _ := json.Marshal(&args)
+	var m map[string]interface{}
+	_ = json.Unmarshal(b, &m)
+	j, _ := json.Marshal(ServiceRequest{
+		Service: service,
+		Method:  method,
 		Version: 1,
-		client:  client,
-	}, nil
-}
+		Request: m,
+	})
 
-func NewGalaxyClient() (*GalaxyClient, error) {
-	nameEnv := ""
-	portEnv := ""
-	//If we are running in kubernetes, galaxy's service (galaxy) should be exposed as an environment variable by kubernetes
-	//Otherwise you can set the environment variables GALAXY_HOST and GALAXY_PORT
-	//If you don't set them, it will default to localhost:3000
-	if KubernetesUtil.IsRunningInKubernetes() {
-		nameEnv = os.Getenv("GALAXY_SERVICE_HOST")
-		portEnv = os.Getenv("GALAXY_SERVICE_PORT")
-	} else {
-		nameEnv = os.Getenv("GALAXY_HOST")
-		portEnv = os.Getenv("GALAXY_PORT")
+	spew.Dump(string(j))
 
-		if nameEnv == "" {
-			nameEnv = "localhost"
-		}
-
-		if portEnv == "" {
-			portEnv = "3000"
-		}
-	}
-	address := fmt.Sprintf("%s:%s", nameEnv, portEnv)
-
-	return NewGalaxyClientWithAddress(address)
-}
-
-func PublishMicroService(receiver any, registerToGalaxy bool) {
-	err := rpc.Register(receiver)
-
+	req, err := http.NewRequest(http.MethodPost, requestURL, bytes.NewBuffer(j))
 	if err != nil {
-		log.Fatal().Err(err).Msg("Failed to register service")
+		fmt.Printf("client: could not create request: %s\n", err)
+		os.Exit(1)
 	}
 
-	host := "127.0.0.1"
-	if KubernetesUtil.IsRunningInKubernetes() {
-		host = KubernetesUtil.GetInternalServiceIP()
-	}
-	port := GetRPCPort()
-
-	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
+	res, err := http.DefaultClient.Do(req)
 	if err != nil {
-		log.Fatal().Err(err).Int("port", port).Msg("Failed to listen on port")
-	}
-	port = listener.Addr().(*net.TCPAddr).Port
-
-	log.Info().Str("host", host).Int("port", port).Msg("Microservice Listening...")
-
-	if registerToGalaxy {
-		galaxy, err := NewGalaxyClient()
-
-		if err != nil {
-			log.Fatal().Err(err).Msg("Failed to connect to Galaxy")
-		}
-
-		galaxy.RegisterToGalaxy(receiver, host, port)
+		fmt.Printf("client: error making http request: %s\n", err)
+		os.Exit(1)
 	}
 
-	rpc.HandleHTTP()
-	err = http.Serve(listener, nil)
+	fmt.Printf("client: got response!\n")
+	fmt.Printf("client: status code: %d\n", res.StatusCode)
+
+	resBody, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		log.Err(err).Msg("Failed to start HTTP server")
+		fmt.Printf("client: could not read response body: %s\n", err)
+		os.Exit(1)
 	}
+	fmt.Printf("client: response body: %s\n", resBody)
+
+	return response, nil
 }
