@@ -1,51 +1,53 @@
-package ServiceCore
+package servicecore
 
 import (
 	"errors"
 	"github.com/joho/godotenv"
-	"log"
+	"github.com/rs/zerolog/log"
 	"os"
 	"strconv"
 	"strings"
 )
 
+// Config is a struct that holds the configuration of the service
 type Config struct {
 	environment Environment
 }
 
+// loadEnv loads the .env file if it exists
 func (config *Config) loadEnv() {
 	err := godotenv.Load()
 
 	if err != nil {
-		log.Println("No .env file found.")
+		log.Warn().Msg("No .env file found.")
 	}
 }
 
-func (c *Config) GetEnvString(name string) (string, error) {
+func (config *Config) GetEnvString(name string) (string, error) {
 	envVariable, exists := os.LookupEnv(name)
 
 	if exists == false {
-		log.Println("Env variable: ", name, " is not found")
+		log.Warn().Str("envvar", name).Msg("Env variable is not found")
 		return "", errors.New("env variable not found")
 	}
 
 	if strings.HasPrefix(envVariable, "$") {
 		varNameWithoutPrefix := strings.TrimPrefix(envVariable, "$")
-		log.Println("Env variable: ", name, " refers to: ", varNameWithoutPrefix)
-		return c.GetEnvString(varNameWithoutPrefix)
+		log.Info().Str("envvar", name).Str("refers", varNameWithoutPrefix).Msg("Env variable refers to another env variable")
+		return config.GetEnvString(varNameWithoutPrefix)
 	}
 
 	if strings.Contains(name, "SECRET") || strings.Contains(name, "KEY") || strings.Contains(name, "TOKEN") || strings.Contains(name, "PASSWORD") {
-		log.Println("[", name, "] = ****")
+		log.Info().Str("envvar", name).Msg("****")
 	} else {
-		log.Println("[", name, "] =", envVariable)
+		log.Info().Str("envvar", name).Msg(envVariable)
 	}
 
 	return envVariable, nil
 }
 
-func (c *Config) GetEnvStringOrDefault(name string, defaultValue string) string {
-	envVariable, err := c.GetEnvString(name)
+func (config *Config) GetEnvStringOrDefault(name string, defaultValue string) string {
+	envVariable, err := config.GetEnvString(name)
 
 	if err != nil {
 		return defaultValue
@@ -54,8 +56,8 @@ func (c *Config) GetEnvStringOrDefault(name string, defaultValue string) string 
 	return envVariable
 }
 
-func (c *Config) GetEnvInt(name string) (int, error) {
-	value, err := c.GetEnvString(name)
+func (config *Config) GetEnvInt(name string) (int, error) {
+	value, err := config.GetEnvString(name)
 
 	if err != nil {
 		return 0, err
@@ -64,15 +66,15 @@ func (c *Config) GetEnvInt(name string) (int, error) {
 	envVariable, err := strconv.Atoi(value)
 
 	if err != nil {
-		log.Println(name, " value is invalid, should be integer")
+		log.Err(err).Str("name", name).Msg(" value is invalid, should be integer")
 		return 0, errors.New("value is not int")
 	}
 
 	return envVariable, nil
 }
 
-func (c *Config) GetEnvIntOrDefault(name string, defaultValue int) int {
-	envVariable, err := c.GetEnvInt(name)
+func (config *Config) GetEnvIntOrDefault(name string, defaultValue int) int {
+	envVariable, err := config.GetEnvInt(name)
 
 	if err != nil {
 		return defaultValue
@@ -81,8 +83,8 @@ func (c *Config) GetEnvIntOrDefault(name string, defaultValue int) int {
 	return envVariable
 }
 
-func (c *Config) GetEnvBool(name string) (bool, error) {
-	value, err := c.GetEnvString(name)
+func (config *Config) GetEnvBool(name string) (bool, error) {
+	value, err := config.GetEnvString(name)
 
 	if err != nil {
 		return false, err
@@ -91,8 +93,8 @@ func (c *Config) GetEnvBool(name string) (bool, error) {
 	return value == "true" || value == "TRUE" || value == "1" || value == "yes" || value == "YES", nil
 }
 
-func (c *Config) GetEnvBoolOrDefault(name string, defaultValue bool) bool {
-	envVariable, err := c.GetEnvBool(name)
+func (config *Config) GetEnvBoolOrDefault(name string, defaultValue bool) bool {
+	envVariable, err := config.GetEnvBool(name)
 
 	if err != nil {
 		return defaultValue
@@ -101,31 +103,34 @@ func (c *Config) GetEnvBoolOrDefault(name string, defaultValue bool) bool {
 	return envVariable
 }
 
-func (c *Config) RequireEnvString(name string) string {
-	value, err := c.GetEnvString(name)
+func (config *Config) RequireEnvString(name string) string {
+	value, err := config.GetEnvString(name)
 
 	if err != nil {
-		log.Fatalln(err.Error())
+		log.Err(err).Str("name", name).Msg("Env variable is not found")
+		os.Exit(1)
 	}
 
 	return value
 }
 
-func (c *Config) RequireEnvInt(name string) int {
-	envVariable, err := c.GetEnvInt(name)
+func (config *Config) RequireEnvInt(name string) int {
+	envVariable, err := config.GetEnvInt(name)
 
 	if err != nil {
-		log.Fatalln(name, " value is invalid")
+		log.Err(err).Str("name", name).Msg("Env variable is not found")
+		os.Exit(1)
 	}
 
 	return envVariable
 }
 
-func (c *Config) RequireEnvBool(name string) bool {
-	value, err := c.GetEnvBool(name)
+func (config *Config) RequireEnvBool(name string) bool {
+	value, err := config.GetEnvBool(name)
 
 	if err != nil {
-		log.Fatalln(err.Error())
+		log.Err(err).Str("name", name).Msg("Env variable is not found")
+		os.Exit(1)
 	}
 
 	return value

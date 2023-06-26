@@ -1,18 +1,27 @@
-package ServiceCore
+package servicecore
+
+import "encoding/json"
 
 type LookUpRequest struct {
-	ServiceMethod string
+	Service string
+	Method  string
 }
 
 type LookUpResponse struct {
 	Address string
 }
 
-func (galaxy *GalaxyClient) LookUp(serviceMethod string) (string, error) {
-	var response LookUpResponse
-	err := galaxy.client.Call("Galaxy.LookUp", LookUpRequest{serviceMethod}, &response)
+func (sh *ServiceHost) LookUp(service string, method string) (string, error) {
+	data, err := sh.Call("Galaxy", "LookUp", LookUpRequest{
+		Service: service,
+		Method:  method,
+	})
 	if err != nil {
 		return "", err
 	}
+
+	var response LookUpResponse
+	marshal, _ := json.Marshal(data)
+	_ = json.Unmarshal(marshal, &response)
 	return response.Address, nil
 }

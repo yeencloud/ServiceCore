@@ -1,4 +1,4 @@
-package ServiceCore
+package servicecore
 
 type Environment string
 
@@ -7,19 +7,19 @@ const (
 	EnvironmentDevelopment = "development"
 )
 
-func (c *Config) GetEnvironment() Environment {
-	if c.environment == "" {
-		envVar := c.GetEnvStringOrDefault("ENV", EnvironmentDevelopment)
+func (config *Config) GetEnvironment() Environment {
+	if config.environment == "" {
+		envVar := config.GetEnvStringOrDefault("ENV", EnvironmentDevelopment)
 
-		c.environment = EnvironmentDevelopment
+		config.environment = EnvironmentDevelopment
 		if envVar == "production" || envVar == "prod" {
-			c.environment = EnvironmentProduction
+			config.environment = EnvironmentProduction
 		}
 	}
 
-	return c.environment
+	return config.environment
 }
 
-func (c *Config) IsDevelopment() bool {
-	return c.GetEnvironment() == EnvironmentDevelopment
+func (config *Config) IsDevelopment() bool {
+	return config.GetEnvironment() == EnvironmentDevelopment
 }

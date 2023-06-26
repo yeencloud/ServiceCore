@@ -1,4 +1,4 @@
-package ServiceCore
+package servicecore
 
 import "errors"
 

@@ -1,6 +1,7 @@
-package ServiceCore
+package servicecore
 
 import (
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/rs/zerolog/log"
 	"github.com/yeencloud/ServiceCore/decompose"
@@ -8,7 +9,7 @@ import (
 	"time"
 )
 
-type ServiceHttpServer struct {
+type ServiceHTTPServer struct {
 	engine *gin.Engine
 
 	service        any
@@ -28,7 +29,7 @@ func replyWithError(err error, validationErrors []string) ServiceReply {
 	return reply
 }
 
-func (shs *ServiceHttpServer) checkRequestHasRequestStruct() gin.HandlerFunc {
+func (shs *ServiceHTTPServer) checkRequestHasRequestStruct() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var request ServiceRequest
 		err := c.BindJSON(&request)
@@ -42,7 +43,7 @@ func (shs *ServiceHttpServer) checkRequestHasRequestStruct() gin.HandlerFunc {
 	}
 }
 
-func (shs *ServiceHttpServer) getRequestStruct(c *gin.Context) (*ServiceRequest, error) {
+func (shs *ServiceHTTPServer) getRequestStruct(c *gin.Context) (*ServiceRequest, error) {
 	request, found := c.Get("request")
 	if !found {
 		return nil, ErrRequestIsMissing
@@ -58,7 +59,7 @@ func (shs *ServiceHttpServer) getRequestStruct(c *gin.Context) (*ServiceRequest,
 }
 
 // this function should check for version
-func (shs *ServiceHttpServer) checkRequestVersionIsValid() gin.HandlerFunc {
+func (shs *ServiceHTTPServer) checkRequestVersionIsValid() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		request, err := shs.getRequestStruct(c)
 		if err != nil {
@@ -66,19 +67,19 @@ func (shs *ServiceHttpServer) checkRequestVersionIsValid() gin.HandlerFunc {
 			return
 		}
 
-		if request.Version != 1 {
+		if request.ApiVersion != APIVersion {
 			c.AbortWithStatusJSON(http.StatusNotAcceptable, replyWithError(ErrVersionMismatch, nil))
 		}
 	}
 }
 
-func (shs *ServiceHttpServer) checkRequestAuthentication() gin.HandlerFunc {
+func (shs *ServiceHTTPServer) checkRequestAuthentication() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		//Todo: Check if request can be traced to a known microservice or a microservice with the same auth key
 	}
 }
 
-func (shs *ServiceHttpServer) checkRequestIfModuleExists() gin.HandlerFunc {
+func (shs *ServiceHTTPServer) checkRequestIfModuleExists() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		request, err := shs.getRequestStruct(c)
 		if err != nil {
@@ -92,7 +93,7 @@ func (shs *ServiceHttpServer) checkRequestIfModuleExists() gin.HandlerFunc {
 	}
 }
 
-func (shs *ServiceHttpServer) checkRequestIfServiceExists() gin.HandlerFunc {
+func (shs *ServiceHTTPServer) checkRequestIfServiceExists() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		request, err := shs.getRequestStruct(c)
 		if err != nil {
@@ -113,7 +114,7 @@ func (shs *ServiceHttpServer) checkRequestIfServiceExists() gin.HandlerFunc {
 	}
 }
 
-func (shs *ServiceHttpServer) logRequest() gin.HandlerFunc {
+func (shs *ServiceHTTPServer) logRequest() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		startTime := time.Now()
 		c.Next()
@@ -140,8 +141,8 @@ func (shs *ServiceHttpServer) logRequest() gin.HandlerFunc {
 	}
 }
 
-func newServiceHttpServer(c *Config, service any, serviceContent *decompose.Module) *ServiceHttpServer {
-	server := ServiceHttpServer{
+func newServiceHttpServer(c *Config, service any, serviceContent *decompose.Module) *ServiceHTTPServer {
+	server := ServiceHTTPServer{
 		service:        service,
 		serviceContent: serviceContent,
 	}
@@ -164,7 +165,6 @@ func newServiceHttpServer(c *Config, service any, serviceContent *decompose.Modu
 	rpc.Use(server.checkRequestAuthentication())
 	rpc.Use(server.checkRequestIfModuleExists())
 	rpc.Use(server.checkRequestIfServiceExists())
-	rpc.Use(server.checkRequestParametersValidation())
 	rpc.Use(server.getParameterStructFromBody())
 	rpc.POST("/", server.callServiceMethod())
 
@@ -174,7 +174,7 @@ func newServiceHttpServer(c *Config, service any, serviceContent *decompose.Modu
 }
 
 func (s *ServiceHost) Listen() error {
-	err := s.ServiceHttpServer.engine.Run()
+	err := s.ServiceHttpServer.engine.Run(fmt.Sprintf(":%d", s.Config.GetRPCPort()))
 
 	if err != nil {
 		return err

@@ -1,9 +1,9 @@
-package ServiceCore
+package servicecore
 
 type ServiceReply struct {
 	Module  string `json:",omitempty"`
 	Service string `json:",omitempty"`
-	Version ApiVersion
+	Version Version
 
 	Error            string   `json:",omitempty"`
 	ValidationErrors []string `json:",omitempty"`
