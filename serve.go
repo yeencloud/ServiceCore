@@ -217,7 +217,7 @@ func (shs *ServiceHTTPServer) callServiceMethod() gin.HandlerFunc {
 				err := err.Interface().(error)
 				log.Err(err).Msg("service method has errored")
 				reply.Error = err.Error()
-
+				spew.Dump(reply)
 				c.IndentedJSON(http.StatusInternalServerError, reply)
 			} else {
 				data := data.Interface()
@@ -225,6 +225,7 @@ func (shs *ServiceHTTPServer) callServiceMethod() gin.HandlerFunc {
 				var m map[string]interface{}
 				_ = json.Unmarshal(b, &m)
 				reply.Data = m
+				spew.Dump(reply)
 				c.IndentedJSON(http.StatusOK, reply)
 			}
 		}

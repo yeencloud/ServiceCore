@@ -2,9 +2,11 @@ package servicecore
 
 import (
 	"fmt"
+	"github.com/davecgh/go-spew/spew"
 	"github.com/gin-gonic/gin"
 	"github.com/rs/zerolog/log"
 	"github.com/yeencloud/ServiceCore/decompose"
+	"net"
 	"net/http"
 	"time"
 )
@@ -26,6 +28,9 @@ func replyWithError(err error, validationErrors []string) ServiceReply {
 	reply := buildServiceReply()
 	reply.Error = err.Error()
 	reply.ValidationErrors = validationErrors
+
+	spew.Dump(reply)
+
 	return reply
 }
 
@@ -160,6 +165,7 @@ func newServiceHttpServer(c *Config, service any, serviceContent *decompose.Modu
 	//
 	r.Use(server.logRequest())
 	rpc := r.Group("/rpc")
+
 	rpc.Use(server.checkRequestHasRequestStruct())
 	rpc.Use(server.checkRequestVersionIsValid())
 	rpc.Use(server.checkRequestAuthentication())
@@ -174,7 +180,15 @@ func newServiceHttpServer(c *Config, service any, serviceContent *decompose.Modu
 }
 
 func (s *ServiceHost) Listen() error {
-	err := s.ServiceHttpServer.engine.Run(fmt.Sprintf(":%d", s.Config.GetRPCPort()))
+	ln, _ := net.Listen("tcp", fmt.Sprintf(":%d", s.Config.GetRPCPort()))
+
+	fmt.Println("Listening on port", ln.Addr().String())
+
+	err := http.Serve(ln, s.ServiceHttpServer.engine)
+	if err != nil {
+		return err
+	}
+	err = s.ServiceHttpServer.engine.Run()
 
 	if err != nil {
 		return err
