@@ -2,21 +2,23 @@ package decompose
 
 import (
 	"github.com/rs/zerolog/log"
+	"github.com/yeencloud/ServiceCore/tags"
+	"github.com/yeencloud/ServiceCore/tools"
 	"reflect"
 )
 
 type MethodValue struct {
-	Type       any
-	Validation []Tag
+	Type       any        `required:"true"`
+	Validation []tags.Tag `json:",omitempty"`
 }
 
 type MethodOutput map[string]MethodValue
 type MethodInput map[string]MethodValue
 
 type Method struct {
-	Name   string
-	Input  MethodInput
-	Output MethodOutput
+	Name   string       `required:"true"`
+	Input  MethodInput  `required:"true"`
+	Output MethodOutput `required:"true"`
 }
 
 var TypeOfError = reflect.TypeOf((*error)(nil)).Elem()
@@ -54,11 +56,7 @@ func valueForStructType(typ reflect.Type) map[string]MethodValue {
 
 		knownType := true
 		if isTypeStruct(fieldType) {
-			v := valueForStructType(fieldType)
-
-			if v != nil {
-				value.Type = v
-			}
+			value.Type = valueForStructType(fieldType)
 		} else if isTypeSlice(fieldType) {
 			value.Type = valueForSliceType(fieldType)
 		} else if isTypeMap(fieldType) {
@@ -74,11 +72,7 @@ func valueForStructType(typ reflect.Type) map[string]MethodValue {
 		}
 	}
 
-	if len(structContent) == 0 {
-		return nil
-	}
-
-	return structContent
+	return tools.MapOrNil(structContent)
 }
 
 func fillValues(typ reflect.Type, input bool) map[string]MethodValue {
@@ -113,7 +107,7 @@ func fillValues(typ reflect.Type, input bool) map[string]MethodValue {
 			fieldName := field.Name
 			fieldType := field.Type
 
-			tagsForValidation := getTags(string(field.Tag))
+			tagsForValidation := tags.GetTags(string(field.Tag))
 
 			if !IsExported(fieldName) {
 				log.Warn().Str("field", fieldName).Msg("field name must be exported")
@@ -147,7 +141,7 @@ func fillValues(typ reflect.Type, input bool) map[string]MethodValue {
 				output[fieldName] = fieldValue
 			}
 		}
-		return output
+		return tools.MapOrNil(output)
 	}
 	return nil
 }
@@ -205,5 +199,5 @@ func decomposeMethodsOfModule(typ reflect.Type) []Method {
 		})
 	}
 
-	return methods
+	return tools.ArrayOrNil(methods)
 }

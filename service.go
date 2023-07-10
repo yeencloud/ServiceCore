@@ -1,18 +1,18 @@
 package servicecore
 
 import (
-	"fmt"
 	"github.com/AliceDiNunno/KubernetesUtil"
-	"github.com/rs/zerolog/log"
+	"github.com/yeencloud/ServiceCore/config"
 	"github.com/yeencloud/ServiceCore/decompose"
-	"os"
+	"github.com/yeencloud/ServiceCore/rpc"
 )
 
 type ServiceHost struct {
 	service           any
 	serviceContent    *decompose.Module
-	Config            *Config
+	Config            *config.Config
 	ServiceHttpServer *ServiceHTTPServer
+	RPC               *rpc.RPC
 }
 
 func (sh *ServiceHost) RegisterService(svc any, name string) {
@@ -24,40 +24,40 @@ func (sh *ServiceHost) RegisterService(svc any, name string) {
 	sh.serviceContent = serviceContent
 }
 
-func NewServiceHost(service any, name string) *ServiceHost {
+func NewServiceHost(service any, modulename string, registerToGalaxy bool) (*ServiceHost, error) {
 	s := ServiceHost{}
 
-	decomposed, err := decompose.DecomposeModule(service, name)
+	decomposed, err := decompose.DecomposeModule(service, modulename)
 
 	if err != nil {
-		return nil
+		return nil, err
 	}
 
-	s.Config = newConfig()
+	rpc := rpc.NewRPC(modulename)
+
+	s.Config = config.NewConfig()
 	s.setupLogging()
 	s.service = service
 	s.serviceContent = decomposed
+	s.RPC = &rpc
 	s.ServiceHttpServer = newServiceHttpServer(s.Config, s.service, s.serviceContent)
+	s.ServiceHttpServer.rpc = s.RPC
 
-	//If the service is galaxy, we don't want to connect it to itself
-	if name == "Galaxy" {
-		return &s
+	if !registerToGalaxy {
+		return &s, nil
 	}
 
 	host := "127.0.0.1"
 	if KubernetesUtil.IsRunningInKubernetes() {
 		host = KubernetesUtil.GetInternalServiceIP()
-		fmt.Printf("client: could not create request: %s\n", err)
-		os.Exit(1)
 	}
 	port := s.Config.GetRPCPort()
 
-	err = s.register(host, port)
+	serr := s.register(host, port)
 
 	if err != nil {
-		log.Err(err).Msg("Failed to register service(s) to Galaxy")
-		return nil
+		return nil, err
 	}
 
-	return &s
+	return nil, serr
 }

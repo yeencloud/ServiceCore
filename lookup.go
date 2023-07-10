@@ -1,6 +1,9 @@
 package servicecore
 
-import "encoding/json"
+import (
+	"encoding/json"
+	"github.com/yeencloud/ServiceCore/domain"
+)
 
 type LookUpRequest struct {
 	Service string
@@ -11,7 +14,7 @@ type LookUpResponse struct {
 	Address string
 }
 
-func (sh *ServiceHost) LookUp(service string, method string) (string, error) {
+func (sh *ServiceHost) LookUp(service string, method string) (string, *domain.ServiceError) {
 	data, err := sh.Call("Galaxy", "LookUp", LookUpRequest{
 		Service: service,
 		Method:  method,

@@ -1,12 +1,23 @@
 package servicecore
 
-type ServiceReply struct {
-	Module  string `json:",omitempty"`
-	Service string `json:",omitempty"`
-	Version Version
+import (
+	"github.com/gin-gonic/gin"
+	"github.com/yeencloud/ServiceCore/domain"
+	"github.com/yeencloud/ServiceCore/tools"
+)
 
-	Error            string   `json:",omitempty"`
-	ValidationErrors []string `json:",omitempty"`
+func buildServiceReply() domain.ServiceReply {
+	return domain.ServiceReply{
+		Version: domain.APIVersion,
+	}
+}
 
-	Data map[string]interface{} `json:",omitempty"`
+func (shs *ServiceHTTPServer) replyWithError(c *gin.Context, err *domain.ServiceError, validationErrors []string) domain.ServiceReply {
+	reply := buildServiceReply()
+	reply.Error = err.Error.Error()
+	reply.ValidationErrors = tools.ArrayOrNil(validationErrors)
+
+	c.AbortWithStatusJSON(err.Code, reply)
+
+	return reply
 }

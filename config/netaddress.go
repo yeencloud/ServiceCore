@@ -1,4 +1,4 @@
-package servicecore
+package config
 
 import (
 	"github.com/AliceDiNunno/KubernetesUtil"

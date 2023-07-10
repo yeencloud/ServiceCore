@@ -1,13 +1,13 @@
-package servicecore
+package domain
 
 type Version int
 
 const APIVersion = Version(1)
 
 type ServiceRequest struct {
-	Service    string
+	Module     string
 	Method     string
 	ApiVersion Version
 
-	Request map[string]interface{}
+	Data map[string]interface{}
 }

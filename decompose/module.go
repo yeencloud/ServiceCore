@@ -6,8 +6,8 @@ import (
 )
 
 type Module struct {
-	Name    string
-	Methods []Method
+	Name    string   `required:"true" minLength:"1"`
+	Methods []Method `required:"true" minLength:"1"`
 }
 
 func DecomposeModule(moduleToDecompose any, moduleName string) (*Module, error) {
@@ -18,12 +18,16 @@ func DecomposeModule(moduleToDecompose any, moduleName string) (*Module, error) 
 		moduleName = reflect.Indirect(moduleValue).Type().Name()
 	}
 	if !IsExported(moduleName) {
-		return nil, errors.New("module name must be exported")
+		return nil, errors.New("validModule name must be exported")
 	}
 	module.Name = moduleName
 
 	moduleType := reflect.TypeOf(moduleToDecompose)
 	module.Methods = decomposeMethodsOfModule(moduleType)
+
+	if len(module.Methods) == 0 {
+		return nil, errors.New("validModule has no exported methods")
+	}
 
 	return &module, nil
 }

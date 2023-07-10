@@ -1,13 +1,16 @@
-package decompose
+package tags
 
 import (
 	"github.com/rs/zerolog/log"
+	"github.com/yeencloud/ServiceCore/tools"
 )
 
 type Tag struct {
-	Name  string
-	Value []string //split by comma
+	Name  string   `required:"true"`
+	Rules []string `required:"true"` //split by comma
 }
+
+type Tags []Tag
 
 func isSpace(c string) bool {
 	return c == " " || c == "\t"
@@ -71,12 +74,12 @@ func skipSpaces(raw string, i *int) {
 	}
 }
 
-func getTags(raw string) []Tag {
+func GetTags(raw string) Tags {
 	if len(raw) == 0 {
 		return nil
 	}
 
-	tagList := []Tag{}
+	tagList := Tags{}
 
 	i := 0
 	for i < len(raw) {
@@ -105,7 +108,7 @@ func getTags(raw string) []Tag {
 			for i < len(raw) {
 				skipSpaces(raw, &i)
 				token := readToken(raw, &i)
-				tag.Value = append(tag.Value, token)
+				tag.Rules = append(tag.Rules, token)
 
 				if i >= len(raw) || !isTagValueSeparator(string(raw[i])) {
 					break
@@ -128,5 +131,17 @@ func getTags(raw string) []Tag {
 		i++
 	}
 
-	return tagList
+	return tools.ArrayOrNil(tagList)
+}
+
+func (ts Tags) Required() bool {
+	for _, t := range ts {
+		if t.Name == "required" {
+			if len(t.Rules) > 0 {
+				return t.Rules[0] == "true"
+			}
+		}
+	}
+
+	return false
 }

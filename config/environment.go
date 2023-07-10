@@ -1,4 +1,4 @@
-package servicecore
+package config
 
 type Environment string
 

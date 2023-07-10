@@ -4,24 +4,23 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/rs/zerolog/log"
+	"github.com/yeencloud/ServiceCore/domain"
+	"github.com/yeencloud/ServiceCore/tools"
 	"io/ioutil"
 	"net/http"
 	"os"
 )
 
-func (sh *ServiceHost) callWithAddress(hostname string, port int, service string, method string, args any) (map[string]interface{}, error) {
-
+func (sh *ServiceHost) callWithAddress(hostname string, port int, service string, method string, args any) (map[string]interface{}, *domain.ServiceError) {
 	requestURL := fmt.Sprintf("http://%s:%d/rpc/", hostname, port)
 
-	b, _ := json.Marshal(&args)
-	var m map[string]interface{}
-	_ = json.Unmarshal(b, &m)
-	j, _ := json.Marshal(ServiceRequest{
-		Service:    service,
+	callData := tools.AnyToMap(args)
+
+	j, _ := json.Marshal(domain.ServiceRequest{
+		Module:     service,
 		Method:     method,
-		ApiVersion: APIVersion,
-		Request:    m,
+		ApiVersion: domain.APIVersion,
+		Data:       callData,
 	})
 
 	req, err := http.NewRequest(http.MethodPost, requestURL, bytes.NewBuffer(j))
@@ -32,38 +31,29 @@ func (sh *ServiceHost) callWithAddress(hostname string, port int, service string
 
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
-		log.Err(err).Msg("could not make http request")
-		os.Exit(1)
+		return nil, ErrCallCouldNotReadResponseBody.Embed(err)
 	}
 
 	resBody, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		log.Err(err).Msg("could not read response body")
-		os.Exit(1)
+		return nil, ErrCallCouldNotReadResponseBody.Embed(err)
 	}
 
 	var response map[string]interface{}
-	json.Unmarshal(resBody, &response)
+	err = json.Unmarshal(resBody, &response)
+
+	if err != nil {
+		return nil, ErrCallCouldNotUnmarshalResponseBody.Embed(err)
+	}
 
 	return response, nil
 }
 
 // Call calls a service method with the given arguments (preferably a struct).
-func (sh *ServiceHost) Call(service string, method string, args any) (map[string]interface{}, error) {
+func (sh *ServiceHost) Call(service string, method string, args any) (map[string]interface{}, *domain.ServiceError) {
 	address, err := sh.LookUp(service, method)
 	if err != nil {
 		return nil, err
-	}
-
-	marshal, err := json.Marshal(args)
-	if err != nil {
-		return map[string]interface{}{}, err
-	}
-
-	var response map[string]interface{}
-	err = json.Unmarshal(marshal, &response)
-	if err != nil {
-		return map[string]interface{}{}, err
 	}
 
 	serverPort := 8000

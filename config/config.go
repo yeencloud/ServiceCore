@@ -1,4 +1,4 @@
-package servicecore
+package config
 
 import (
 	"errors"
@@ -136,7 +136,7 @@ func (config *Config) RequireEnvBool(name string) bool {
 	return value
 }
 
-func newConfig() *Config {
+func NewConfig() *Config {
 	conf := Config{}
 
 	conf.loadEnv()
