@@ -2,6 +2,7 @@ package decompose
 
 import (
 	"github.com/rs/zerolog/log"
+	error "github.com/yeencloud/ServiceCore/serviceError"
 	"github.com/yeencloud/ServiceCore/tags"
 	"github.com/yeencloud/ServiceCore/tools"
 	"reflect"
@@ -20,8 +21,6 @@ type Method struct {
 	Input  MethodInput  `required:"true"`
 	Output MethodOutput `required:"true"`
 }
-
-var TypeOfError = reflect.TypeOf((*error)(nil)).Elem()
 
 func valueForBuiltInType(typ reflect.Type) string {
 	return typ.Kind().String()
@@ -164,7 +163,7 @@ func decomposeMethodsOfModule(typ reflect.Type) []Method {
 		}
 
 		if methodType.NumOut() != 2 {
-			log.Warn().Str("method", methodName).Msg("method must have 2 outputs: output, error")
+			log.Warn().Str("method", methodName).Msg("method must have 2 outputs: output, serviceerror")
 			continue
 		}
 
@@ -177,8 +176,8 @@ func decomposeMethodsOfModule(typ reflect.Type) []Method {
 
 		// output type needs to be exported
 		replyType := methodType.Out(0)
-		if returnType := methodType.Out(1); returnType != TypeOfError {
-			log.Warn().Str("method", methodName).Msg("the return type of the method must be error")
+		if returnType := methodType.Out(1); returnType != reflect.TypeOf(&error.Error{}) {
+			log.Warn().Str("method", methodName).Msg("The method should return a pointer to String as its second return type")
 			continue
 		}
 

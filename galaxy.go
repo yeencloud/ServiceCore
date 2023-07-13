@@ -2,6 +2,7 @@ package servicecore
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/yeencloud/ServiceCore/decompose"
 	"github.com/yeencloud/ServiceCore/domain"
@@ -30,7 +31,7 @@ func (sh *ServiceHost) register(host string, port int) error {
 	_ = json.Unmarshal(m, &Response)
 
 	if err != nil {
-		return err.Error
+		return errors.New(err.String)
 	}
 	return nil
 }

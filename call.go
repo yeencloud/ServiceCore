@@ -5,13 +5,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/yeencloud/ServiceCore/domain"
+	"github.com/yeencloud/ServiceCore/serviceError"
 	"github.com/yeencloud/ServiceCore/tools"
 	"io/ioutil"
 	"net/http"
 	"os"
 )
 
-func (sh *ServiceHost) callWithAddress(hostname string, port int, service string, method string, args any) (map[string]interface{}, *domain.ServiceError) {
+func (sh *ServiceHost) callWithAddress(hostname string, port int, service string, method string, args any) (map[string]interface{}, *serviceError.Error) {
 	requestURL := fmt.Sprintf("http://%s:%d/rpc/", hostname, port)
 
 	callData := tools.AnyToMap(args)
@@ -31,26 +32,26 @@ func (sh *ServiceHost) callWithAddress(hostname string, port int, service string
 
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return nil, ErrCallCouldNotReadResponseBody.Embed(err)
+		return nil, serviceError.Trace(ErrCallCouldNotReadResponseBody) //.Embed(err)
 	}
 
 	resBody, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		return nil, ErrCallCouldNotReadResponseBody.Embed(err)
+		return nil, serviceError.Trace(ErrCallCouldNotReadResponseBody)
 	}
 
 	var response map[string]interface{}
 	err = json.Unmarshal(resBody, &response)
 
 	if err != nil {
-		return nil, ErrCallCouldNotUnmarshalResponseBody.Embed(err)
+		return nil, serviceError.Trace(ErrCallCouldNotUnmarshalResponseBody)
 	}
 
 	return response, nil
 }
 
 // Call calls a service method with the given arguments (preferably a struct).
-func (sh *ServiceHost) Call(service string, method string, args any) (map[string]interface{}, *domain.ServiceError) {
+func (sh *ServiceHost) Call(service string, method string, args any) (map[string]interface{}, *serviceError.Error) {
 	address, err := sh.LookUp(service, method)
 	if err != nil {
 		return nil, err

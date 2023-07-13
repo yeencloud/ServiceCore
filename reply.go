@@ -3,6 +3,7 @@ package servicecore
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/yeencloud/ServiceCore/domain"
+	"github.com/yeencloud/ServiceCore/serviceError"
 	"github.com/yeencloud/ServiceCore/tools"
 )
 
@@ -12,12 +13,12 @@ func buildServiceReply() domain.ServiceReply {
 	}
 }
 
-func (shs *ServiceHTTPServer) replyWithError(c *gin.Context, err *domain.ServiceError, validationErrors []string) domain.ServiceReply {
+func (shs *ServiceHTTPServer) replyWithError(c *gin.Context, requestId string, err *serviceError.Error, validationErrors []string) domain.ServiceReply {
 	reply := buildServiceReply()
-	reply.Error = err.Error.Error()
+	reply.Error = err
 	reply.ValidationErrors = tools.ArrayOrNil(validationErrors)
 
-	c.AbortWithStatusJSON(err.Code, reply)
+	c.AbortWithStatusJSON(err.HttpCode, reply)
 
 	return reply
 }

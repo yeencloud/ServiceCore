@@ -98,7 +98,7 @@ func fillAppropriateType(name string, currentField reflect.Type, data interface{
 	var nestedValue any
 
 	if currentField.Kind() == reflect.Struct {
-		nestedValue, nestedErrors = createStructParameter(name, currentField, data.(map[string]interface{}))
+		nestedValue = createStructParameter(name, currentField, data.(map[string]interface{}), &errors)
 	} else if currentField.Kind() == reflect.Slice {
 		nestedValue, nestedErrors = createArrayParameter(name, currentField, data.([]interface{}))
 	} else if currentField.Kind() == reflect.Map {
@@ -115,9 +115,7 @@ func fillAppropriateType(name string, currentField reflect.Type, data interface{
 	return nestedValue, nil
 }
 
-func createStructParameter(name string, typeInfo reflect.Type, request map[string]interface{}) (any, []string) {
-	var errors []string
-
+func createStructParameter(name string, typeInfo reflect.Type, request map[string]interface{}, errors *[]string) any {
 	builtStruct := reflect.New(typeInfo)
 
 	for k := 0; k < typeInfo.NumField(); k++ {
@@ -125,13 +123,21 @@ func createStructParameter(name string, typeInfo reflect.Type, request map[strin
 		fName := fieldName(name, currentField.Name)
 		subValue, valueExists := request[currentField.Name]
 
+		defer func() {
+			if r := recover(); r != nil {
+				*errors = append(*errors, "cannot convert field '"+fName+"' to "+currentField.Type.Name())
+				println("Failed " + fName)
+				return
+			}
+		}()
+
 		fieldTag := tags.GetTags(string(currentField.Tag))
 
 		isRequired := fieldTag.Required()
 
 		if !valueExists {
 			if isRequired {
-				errors = append(errors, "field '"+fName+"' is required")
+				*errors = append(*errors, "field '"+fName+"' is required")
 			}
 			continue
 		} else {
@@ -141,7 +147,7 @@ func createStructParameter(name string, typeInfo reflect.Type, request map[strin
 		filledValue, err := fillAppropriateType(fName, currentField.Type, subValue)
 
 		if err != nil && len(err) > 0 {
-			errors = append(errors, err...)
+			*errors = append(*errors, err...)
 		}
 
 		if filledValue != nil {
@@ -151,19 +157,27 @@ func createStructParameter(name string, typeInfo reflect.Type, request map[strin
 			getInnerValue(&builtStruct).Field(k).Set(reflect.ValueOf(filledValue).
 				Convert(getInnerValue(&builtStruct).Field(k).Type())) //The convert function call should be useful when working with numbers since json numbers are considered float64 this will be used to convert them to the correct value (int for example)
 
-			errors = append(errors, validator.Validate(fName, getInnerValue(&builtStruct).Field(k).Interface(), fieldTag)...)
+			*errors = append(*errors, validator.Validate(fName, getInnerValue(&builtStruct).Field(k).Interface(), fieldTag)...)
 
 		}
 
 	}
 
+	if len(*errors) > 0 {
+		return nil
+	}
+
+	return builtStruct.Elem().Interface()
+}
+
+func CreateMethodParameter(typeInfo reflect.Type, request map[string]interface{}) (any, []string) {
+	var errors []string
+
+	value := createStructParameter("", typeInfo, request, &errors)
+
 	if len(errors) > 0 {
 		return nil, errors
 	}
 
-	return builtStruct.Elem().Interface(), nil
-}
-
-func CreateMethodParameter(typeInfo reflect.Type, request map[string]interface{}) (any, []string) {
-	return createStructParameter("", typeInfo, request)
+	return value, nil
 }

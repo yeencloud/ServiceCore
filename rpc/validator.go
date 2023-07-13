@@ -50,5 +50,5 @@ func (v *Validator) validationError(name string, error string) string {
 }
 
 func (v *Validator) validationFieldError(name string, error string) string {
-	return fmt.Sprintf("%s: validation field has errored: %s (this is an implementation error not a validation based one)", name, error)
+	return fmt.Sprintf("%s: validation field has errored: %s (this is an implementation serviceerror not a validation based one)", name, error)
 }

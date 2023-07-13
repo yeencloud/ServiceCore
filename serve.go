@@ -1,12 +1,14 @@
 package servicecore
 
 import (
+	"errors"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
-	"github.com/yeencloud/ServiceCore/decompose"
 	"github.com/yeencloud/ServiceCore/domain"
 	"github.com/yeencloud/ServiceCore/rpc"
+	"github.com/yeencloud/ServiceCore/serviceError"
 	"github.com/yeencloud/ServiceCore/tools"
 	"net/http"
 	"reflect"
@@ -44,7 +46,7 @@ func (shs *ServiceHTTPServer) getParameterStructFromBody() gin.HandlerFunc {
 		methodParameter, validationErrors := rpc.CreateMethodParameter(methodType.Type.In(1), request.Data)
 
 		if len(validationErrors) > 0 {
-			shs.replyWithError(c, &ErrValidationFailed, validationErrors)
+			shs.replyWithError(c, request.RequestID, serviceError.Trace(ErrValidationFailed), validationErrors)
 			return
 		}
 
@@ -58,7 +60,7 @@ func (shs *ServiceHTTPServer) checkRequestHasRequestStruct() gin.HandlerFunc {
 		err := c.BindJSON(&request)
 
 		if err != nil {
-			shs.replyWithError(c, ErrRequestCouldNotBindRequest.Embed(err), nil)
+			shs.replyWithError(c, request.RequestID, serviceError.Trace(ErrRequestCouldNotBindRequest), nil)
 			return
 		}
 
@@ -74,16 +76,16 @@ func (shs *ServiceHTTPServer) checkRequestIsValid() gin.HandlerFunc {
 			return
 		}
 
-		serr := rpc.CheckRequestVersion(request)
+		serr := domain.CheckRequestVersion(request)
 
 		if serr != nil {
-			shs.replyWithError(c, serr, nil)
+			shs.replyWithError(c, request.RequestID, serr, nil)
 		}
 
 		err = shs.rpc.CheckRequestModule(request)
 
 		if err != nil {
-			shs.replyWithError(c, err, nil)
+			shs.replyWithError(c, request.RequestID, err, nil)
 		}
 
 		service := request.Method
@@ -98,23 +100,23 @@ func (shs *ServiceHTTPServer) checkRequestIsValid() gin.HandlerFunc {
 		}
 
 		if !methodFound {
-			shs.replyWithError(c, &ErrMethodNotFound, nil)
+			shs.replyWithError(c, request.RequestID, serviceError.Trace(ErrMethodNotFound), nil)
 		}
 
 		if request.Data == nil || len(request.Data) <= 0 {
-			shs.replyWithError(c, &ErrRequestDataIsMissing, nil)
+			shs.replyWithError(c, request.RequestID, serviceError.Trace(ErrRequestDataIsMissing), nil)
 		}
 	}
 }
 
-func (shs *ServiceHTTPServer) getRequestStruct(c *gin.Context) (*domain.ServiceRequest, *domain.ServiceError) {
+func (shs *ServiceHTTPServer) getRequestStruct(c *gin.Context) (*domain.ServiceRequest, *serviceError.Error) {
 	request, _ := c.Get("request")
 
 	castRequest, succeeded := request.(domain.ServiceRequest)
 
 	if !succeeded {
-		shs.replyWithError(c, &ErrRequestCouldNotBeCast, nil)
-		return nil, &ErrRequestCouldNotBeCast
+		shs.replyWithError(c, "", serviceError.Trace(ErrRequestCouldNotBeCast), nil)
+		return nil, serviceError.Trace(ErrRequestCouldNotBeCast)
 	}
 
 	return &castRequest, nil
@@ -128,9 +130,17 @@ func (shs *ServiceHTTPServer) callServiceMethod() gin.HandlerFunc {
 			return
 		}
 
+		if request.RequestID != "" {
+			_, stderr := uuid.Parse(request.RequestID)
+			if stderr != nil {
+				shs.replyWithError(c, request.RequestID, serviceError.Trace(ErrInvalidRequestID), nil)
+				return
+			}
+		}
+
 		serviceInstance := reflect.ValueOf(shs.service)
 		if !serviceInstance.IsValid() {
-			shs.replyWithError(c, &ErrServiceNotFound, nil)
+			shs.replyWithError(c, request.RequestID, serviceError.Trace(ErrServiceNotFound), nil)
 			return
 		}
 
@@ -138,13 +148,13 @@ func (shs *ServiceHTTPServer) callServiceMethod() gin.HandlerFunc {
 		methodToCall := serviceInstance.MethodByName(request.Method)
 		_ = methodType
 		if !methodToCall.IsValid() {
-			shs.replyWithError(c, &ErrMethodNotFound, nil)
+			shs.replyWithError(c, request.RequestID, serviceError.Trace(ErrMethodNotFound), nil)
 			return
 		}
 
 		inpass, found := c.Get("parameter")
-		if !found {
-			shs.replyWithError(c, &ErrCouldNotGetMethodParameter, nil)
+		if !found || inpass == nil {
+			//shs.replyWithError(c, &ErrCouldNotGetMethodParameter, nil)
 			return
 		}
 
@@ -152,25 +162,36 @@ func (shs *ServiceHTTPServer) callServiceMethod() gin.HandlerFunc {
 
 		if len(results) == 2 {
 			callResult := results[0]
-			err := results[1]
+			serr := results[1]
 
 			reply := domain.ServiceReply{
-				Module:  request.Module,
-				Service: request.Method,
-				Version: domain.APIVersion,
+				RequestID: request.RequestID,
+				Module:    request.Module,
+				Service:   request.Method,
+				Version:   domain.APIVersion,
 			}
 
-			if err.Type() == decompose.TypeOfError && !err.IsNil() {
-				err := err.Interface().(error)
-				log.Err(err).Msg("service method has errored")
-				reply.Error = err.Error()
+			if serr.Type() == reflect.TypeOf(&serviceError.Error{}) && !serr.IsNil() {
+				err := serr.Interface().(*serviceError.Error)
+
+				log.Err(errors.New(err.String)).Msg("service method has errored")
+				reply.Error = err
+
+				request, found := c.Get("requestmetadata")
+
+				if !found {
+					request = domain.ServiceRequest{}
+				}
+
+				reply.Error.AdditionnalData = map[string]interface{}{
+					"Parameters": inpass,
+					"Request":    request,
+				}
 				spew.Dump(reply)
-				c.IndentedJSON(http.StatusInternalServerError, reply)
+				c.IndentedJSON(err.HttpCode, reply)
 			} else {
 				data := callResult.Interface()
-
 				rep := tools.AnyToMap(data)
-
 				reply.Data = rep
 				spew.Dump(reply)
 				c.IndentedJSON(http.StatusOK, reply)

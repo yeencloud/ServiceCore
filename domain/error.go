@@ -1,14 +1,8 @@
 package domain
 
-type ServiceError struct {
-	Code  int
-	Error error
+import (
+	"github.com/yeencloud/ServiceCore/serviceError"
+	"net/http"
+)
 
-	EmbeddedError error `json:",omitempty"`
-}
-
-func (se ServiceError) Embed(err error) *ServiceError {
-	serr := se
-	serr.EmbeddedError = err
-	return &serr
-}
+var ErrVersionMismatch = serviceError.ErrorDescription{HttpCode: http.StatusNotAcceptable, String: "version mismatch"}
