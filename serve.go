@@ -2,7 +2,6 @@ package servicecore
 
 import (
 	"errors"
-	"github.com/davecgh/go-spew/spew"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
@@ -187,13 +186,11 @@ func (shs *ServiceHTTPServer) callServiceMethod() gin.HandlerFunc {
 					"Parameters": inpass,
 					"Request":    request,
 				}
-				spew.Dump(reply)
 				c.IndentedJSON(err.HttpCode, reply)
 			} else {
 				data := callResult.Interface()
 				rep := tools.AnyToMap(data)
 				reply.Data = rep
-				spew.Dump(reply)
 				c.IndentedJSON(http.StatusOK, reply)
 			}
 		}

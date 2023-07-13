@@ -2,7 +2,6 @@ package rpc
 
 import (
 	"fmt"
-	"github.com/davecgh/go-spew/spew"
 	"github.com/yeencloud/ServiceCore/tags"
 	"reflect"
 	"strings"
@@ -153,7 +152,6 @@ func createStructParameter(name string, typeInfo reflect.Type, request map[strin
 		if filledValue != nil {
 			validator := NewValidator()
 
-			spew.Dump("Set value for field "+currentField.Name, filledValue)
 			getInnerValue(&builtStruct).Field(k).Set(reflect.ValueOf(filledValue).
 				Convert(getInnerValue(&builtStruct).Field(k).Type())) //The convert function call should be useful when working with numbers since json numbers are considered float64 this will be used to convert them to the correct value (int for example)
 

@@ -2,7 +2,6 @@ package rpc
 
 import (
 	"fmt"
-	"github.com/davecgh/go-spew/spew"
 	"github.com/yeencloud/ServiceCore/tags"
 	"github.com/yeencloud/ServiceCore/tools"
 	"reflect"
@@ -30,7 +29,6 @@ func NewValidator() Validator {
 func (v *Validator) Validate(name string, value any, tags tags.Tags) []string {
 	println("VALIDATE")
 	println(reflect.TypeOf(value).Name())
-	spew.Dump(tags)
 
 	var errors []string
 
