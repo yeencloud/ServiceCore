@@ -2,7 +2,7 @@ package decompose
 
 import (
 	"github.com/rs/zerolog/log"
-	error "github.com/yeencloud/ServiceCore/serviceError"
+	"github.com/yeencloud/ServiceCore/serviceError"
 	"github.com/yeencloud/ServiceCore/tags"
 	"github.com/yeencloud/ServiceCore/tools"
 	"reflect"
@@ -176,8 +176,8 @@ func decomposeMethodsOfModule(typ reflect.Type) []Method {
 
 		// output type needs to be exported
 		replyType := methodType.Out(0)
-		if returnType := methodType.Out(1); returnType != reflect.TypeOf(&error.Error{}) {
-			log.Warn().Str("method", methodName).Msg("The method should return a pointer to String as its second return type")
+		if returnType := methodType.Out(1); returnType != reflect.TypeOf(&serviceError.Error{}) {
+			log.Warn().Str("method", methodName).Msg("The method should return a pointer to serviceError.Error as its second return type")
 			continue
 		}
 

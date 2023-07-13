@@ -52,11 +52,15 @@ func newServiceHttpServer(c *config.Config, service any, serviceContent *decompo
 }
 
 func (sh *ServiceHost) Listen() error {
-	ln, _ := net.Listen("tcp", fmt.Sprintf(":%d", sh.Config.GetRPCPort()))
+	ln, err := net.Listen("tcp", fmt.Sprintf(":%d", sh.Config.GetRPCPort()))
+
+	if err != nil {
+		return err
+	}
 
 	fmt.Println("Listening on port", ln.Addr().String())
 
-	err := http.Serve(ln, sh.ServiceHttpServer.engine)
+	err = http.Serve(ln, sh.ServiceHttpServer.engine)
 	if err != nil {
 		return err
 	}
