@@ -92,6 +92,8 @@ func (sh *ServiceHost) Call(service string, method string, args any) (map[string
 	if service == "Galaxy" {
 		address = sh.Config.GetGalaxyAddress()
 		port = sh.Config.GetGalaxyPort()
+
+		spew.Dump("Galaxy address", address, "port", port)
 	} else {
 		lookup, err := sh.LookUp(service, method)
 		if err != nil {
@@ -99,6 +101,8 @@ func (sh *ServiceHost) Call(service string, method string, args any) (map[string
 		}
 		address = lookup.Address
 		port = lookup.Port
+
+		spew.Dump("lookup", lookup)
 	}
 
 	spew.Dump("service", service, "method", method, " is at ", address, ":", port)

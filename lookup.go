@@ -27,6 +27,8 @@ func (sh *ServiceHost) LookUp(service string, method string) (LookUpResponse, *s
 		return LookUpResponse{}, err
 	}
 
+	spew.Dump("LookUp response body", data)
+
 	var response LookUpResponse
 	marshal, _ := json.Marshal(data)
 	_ = json.Unmarshal(marshal, &response)
