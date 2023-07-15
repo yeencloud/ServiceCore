@@ -15,6 +15,10 @@ type ServiceHost struct {
 	RPC               *rpc.RPC
 }
 
+type ServiceClient struct {
+	Config *config.Config
+}
+
 func (sh *ServiceHost) RegisterService(svc any, name string) {
 	sh.service = svc
 	serviceContent, err := decompose.DecomposeModule(svc, name)
@@ -22,6 +26,14 @@ func (sh *ServiceHost) RegisterService(svc any, name string) {
 		return
 	}
 	sh.serviceContent = serviceContent
+}
+
+func NewServiceClient() *ServiceHost {
+	s := ServiceHost{}
+	s.Config = config.NewConfig()
+	s.setupLogging()
+
+	return &s
 }
 
 func NewServiceHost(service any, modulename string, registerToGalaxy bool) (*ServiceHost, error) {
