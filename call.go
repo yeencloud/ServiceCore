@@ -59,7 +59,9 @@ func (sh *ServiceHost) callWithAddress(address string, port int, service string,
 	var serverr serviceError.Error
 	err = json.Unmarshal(potentialErrorBody, &serverr)
 
-	spew.Dump("Call error 62", err)
+	if err != nil {
+		spew.Dump("Call error 62", err)
+	}
 
 	if err == nil && serverr.HttpCode >= 300 {
 		spew.Dump("Call error 65", serverr)
@@ -68,7 +70,10 @@ func (sh *ServiceHost) callWithAddress(address string, port int, service string,
 
 	var response map[string]interface{}
 	err = json.Unmarshal(potentialResponseBody, &response)
-	spew.Dump("Call error 71", err.Error())
+
+	if err != nil {
+		spew.Dump("Call error 71", err.Error())
+	}
 
 	if err != nil {
 		spew.Dump("Call error", err)
