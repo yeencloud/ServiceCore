@@ -60,11 +60,11 @@ func (sh *ServiceHost) Call(service string, method string, args any) (map[string
 		port = sh.Config.GetGalaxyPort()
 	} else {
 		lookup, err := sh.LookUp(service, method)
-		address = lookup
+		address = lookup.Address
 		if err != nil {
 			return nil, err
 		}
-		port = 8000
+		port = lookup.Port
 	}
 
 	return sh.callWithAddress(address, port, service, method, args)
