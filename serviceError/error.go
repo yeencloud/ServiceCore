@@ -5,7 +5,7 @@ import (
 )
 
 type ErrorDescription struct {
-	HttpCode int `json:"-"`
+	HttpCode int
 	String   string
 }
 
