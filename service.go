@@ -53,11 +53,11 @@ func NewServiceHost(service any, modulename string, registerToGalaxy bool) (*Ser
 	}
 	port := s.Config.GetRPCPort()
 
-	serr := s.register(host, port)
+	err = s.register(host, port)
 
 	if err != nil {
 		return nil, err
 	}
 
-	return nil, serr
+	return &s, nil
 }
