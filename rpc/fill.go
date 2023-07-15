@@ -97,7 +97,7 @@ func fillAppropriateType(name string, currentField reflect.Type, data interface{
 	var nestedValue any
 
 	if currentField.Kind() == reflect.Struct {
-		nestedValue = createStructParameter(name, currentField, data.(map[string]interface{}), &errors)
+		nestedValue = createStructParameter(name, currentField, data.(map[string]interface{}), &nestedErrors)
 	} else if currentField.Kind() == reflect.Slice {
 		nestedValue, nestedErrors = createArrayParameter(name, currentField, data.([]interface{}))
 	} else if currentField.Kind() == reflect.Map {
