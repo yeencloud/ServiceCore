@@ -19,6 +19,7 @@ type RegisterResponse struct {
 }
 
 func (sh *ServiceHost) register(address string, port int, hostname string) error {
+	spew.Dump("registering", address, port, hostname)
 
 	registerRequest := RegisterRequest{
 		address,

@@ -2,6 +2,7 @@ package servicecore
 
 import (
 	"github.com/AliceDiNunno/KubernetesUtil"
+	"github.com/davecgh/go-spew/spew"
 	"github.com/yeencloud/ServiceCore/config"
 	"github.com/yeencloud/ServiceCore/decompose"
 	"github.com/yeencloud/ServiceCore/rpc"
@@ -68,6 +69,7 @@ func NewServiceHost(service any, modulename string, registerToGalaxy bool) (*Ser
 
 	hostname, _ := os.Hostname()
 
+	spew.Dump("registering", address, port, hostname)
 	err = s.register(address, port, hostname)
 
 	if err != nil {
