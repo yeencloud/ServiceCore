@@ -27,6 +27,8 @@ func (sh *ServiceHost) callWithAddress(address string, port int, service string,
 		Data:       callData,
 	})
 
+	spew.Dump("Call request", string(j))
+
 	req, err := http.NewRequest(http.MethodPost, requestURL, bytes.NewBuffer(j))
 	if err != nil {
 		spew.Dump("Call error", err)
@@ -39,30 +41,40 @@ func (sh *ServiceHost) callWithAddress(address string, port int, service string,
 		spew.Dump("Call error", err)
 		return nil, serviceError.Trace(ErrCallCouldNotReadResponseBody) //.Embed(err)
 	}
+	spew.Dump("Call response", res)
 
 	resBody, err := io.ReadAll(res.Body)
 	if err != nil {
 		spew.Dump("Call error", err)
 		return nil, serviceError.Trace(ErrCallCouldNotReadResponseBody)
 	}
+	spew.Dump("Call response body", string(resBody))
 
 	potentialErrorBody := resBody
 	potentialResponseBody := potentialErrorBody
 
+	spew.Dump("Call potential error body", string(potentialErrorBody))
+	spew.Dump("Call potential response body", string(potentialResponseBody))
+
 	var serverr serviceError.Error
 	err = json.Unmarshal(potentialErrorBody, &serverr)
 
+	spew.Dump("Call error 62", err)
+
 	if err == nil {
+		spew.Dump("Call error 65", serverr)
 		return nil, &serverr
 	}
 
 	var response map[string]interface{}
 	err = json.Unmarshal(potentialResponseBody, &response)
+	spew.Dump("Call error 71", err.Error())
 
 	if err != nil {
 		spew.Dump("Call error", err)
 		return nil, serviceError.Trace(ErrCallCouldNotUnmarshalResponseBody)
 	}
+	spew.Dump("Call response", response)
 
 	return response, nil
 }
