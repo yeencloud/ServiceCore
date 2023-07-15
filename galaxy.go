@@ -3,17 +3,14 @@ package servicecore
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/yeencloud/ServiceCore/decompose"
-	"github.com/yeencloud/ServiceCore/domain"
 )
 
 type RegisterRequest struct {
 	Address    string
+	Port       int
 	Components decompose.Module
-
-	Version domain.Version
 }
 
 type RegisterResponse struct {
@@ -23,9 +20,9 @@ type RegisterResponse struct {
 func (sh *ServiceHost) register(host string, port int) error {
 
 	registerRequest := RegisterRequest{
-		fmt.Sprintf("%s:%d", host, port),
+		host,
+		port,
 		*sh.serviceContent,
-		domain.APIVersion,
 	}
 
 	spew.Dump("register request", registerRequest)
