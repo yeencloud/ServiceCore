@@ -52,12 +52,20 @@ func (sh *ServiceHost) callWithAddress(hostname string, port int, service string
 
 // Call calls a service method with the given arguments (preferably a struct).
 func (sh *ServiceHost) Call(service string, method string, args any) (map[string]interface{}, *serviceError.Error) {
-	address, err := sh.LookUp(service, method)
-	if err != nil {
-		return nil, err
+	var address string
+	var port int
+
+	if service == "Galaxy" {
+		address = sh.Config.GetGalaxyAddress()
+		port = sh.Config.GetGalaxyPort()
+	} else {
+		lookup, err := sh.LookUp(service, method)
+		address = lookup
+		if err != nil {
+			return nil, err
+		}
+		port = 8000
 	}
 
-	serverPort := 8000
-
-	return sh.callWithAddress(address, serverPort, service, method, args)
+	return sh.callWithAddress(address, port, service, method, args)
 }
