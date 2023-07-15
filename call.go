@@ -8,7 +8,7 @@ import (
 	"github.com/yeencloud/ServiceCore/domain"
 	"github.com/yeencloud/ServiceCore/serviceError"
 	"github.com/yeencloud/ServiceCore/tools"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"os"
 )
@@ -40,21 +40,24 @@ func (sh *ServiceHost) callWithAddress(address string, port int, service string,
 		return nil, serviceError.Trace(ErrCallCouldNotReadResponseBody) //.Embed(err)
 	}
 
-	resBody, err := ioutil.ReadAll(res.Body)
+	resBody, err := io.ReadAll(res.Body)
 	if err != nil {
 		spew.Dump("Call error", err)
 		return nil, serviceError.Trace(ErrCallCouldNotReadResponseBody)
 	}
 
+	potentialErrorBody := resBody
+	potentialResponseBody := potentialErrorBody
+
 	var serverr serviceError.Error
-	err = json.Unmarshal(resBody, &serverr)
+	err = json.Unmarshal(potentialErrorBody, &serverr)
 
 	if err == nil {
 		return nil, &serverr
 	}
 
 	var response map[string]interface{}
-	err = json.Unmarshal(resBody, &response)
+	err = json.Unmarshal(potentialResponseBody, &response)
 
 	if err != nil {
 		spew.Dump("Call error", err)
