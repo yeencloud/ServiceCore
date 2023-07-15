@@ -61,7 +61,7 @@ func (sh *ServiceHost) callWithAddress(address string, port int, service string,
 
 	spew.Dump("Call error 62", err)
 
-	if err == nil {
+	if err == nil && serverr.HttpCode >= 300 {
 		spew.Dump("Call error 65", serverr)
 		return nil, &serverr
 	}
