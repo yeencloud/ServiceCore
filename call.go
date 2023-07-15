@@ -38,7 +38,7 @@ func (sh *ServiceHost) callWithAddress(address string, port int, service string,
 
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
-		spew.Dump("Call error", err)
+		spew.Dump("Call error", err.Error())
 		return nil, serviceError.Trace(ErrCallCouldNotReadResponseBody) //.Embed(err)
 	}
 	spew.Dump("Call response", res)
