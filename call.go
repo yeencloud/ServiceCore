@@ -46,6 +46,13 @@ func (sh *ServiceHost) callWithAddress(address string, port int, service string,
 		return nil, serviceError.Trace(ErrCallCouldNotReadResponseBody)
 	}
 
+	var serverr serviceError.Error
+	err = json.Unmarshal(resBody, &serverr)
+
+	if err == nil {
+		return nil, &serverr
+	}
+
 	var response map[string]interface{}
 	err = json.Unmarshal(resBody, &response)
 
