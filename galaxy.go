@@ -10,6 +10,7 @@ import (
 type RegisterRequest struct {
 	Address    string
 	Port       int
+	Hostname   string
 	Components decompose.Module
 }
 
@@ -17,11 +18,12 @@ type RegisterResponse struct {
 	Success bool
 }
 
-func (sh *ServiceHost) register(host string, port int) error {
+func (sh *ServiceHost) register(address string, port int, hostname string) error {
 
 	registerRequest := RegisterRequest{
-		host,
+		address,
 		port,
+		hostname,
 		*sh.serviceContent,
 	}
 

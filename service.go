@@ -5,6 +5,7 @@ import (
 	"github.com/yeencloud/ServiceCore/config"
 	"github.com/yeencloud/ServiceCore/decompose"
 	"github.com/yeencloud/ServiceCore/rpc"
+	"os"
 )
 
 type ServiceHost struct {
@@ -59,13 +60,15 @@ func NewServiceHost(service any, modulename string, registerToGalaxy bool) (*Ser
 		return &s, nil
 	}
 
-	host := "127.0.0.1"
+	address := "127.0.0.1"
 	if KubernetesUtil.IsRunningInKubernetes() {
-		host = KubernetesUtil.GetInternalServiceIP()
+		address = KubernetesUtil.GetInternalServiceIP()
 	}
 	port := s.Config.GetRPCPort()
 
-	err = s.register(host, port)
+	hostname, _ := os.Hostname()
+
+	err = s.register(address, port, hostname)
 
 	if err != nil {
 		return nil, err
