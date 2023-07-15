@@ -13,7 +13,7 @@ import (
 	"os"
 )
 
-func (sh *ServiceHost) callWithAddress(address string, port int, service string, method string, args any) (map[string]interface{}, *serviceError.Error) {
+func (sh *ServiceHost) callWithAddress(address string, port int, service string, method string, args any) (*domain.ServiceReply, *serviceError.Error) {
 	requestURL := fmt.Sprintf("http://%s:%d/rpc/", address, port)
 
 	spew.Dump("Call at ", requestURL)
@@ -68,7 +68,7 @@ func (sh *ServiceHost) callWithAddress(address string, port int, service string,
 		return nil, &serverr
 	}
 
-	var response map[string]interface{}
+	var response domain.ServiceReply
 	err = json.Unmarshal(potentialResponseBody, &response)
 
 	if err != nil {
@@ -81,11 +81,11 @@ func (sh *ServiceHost) callWithAddress(address string, port int, service string,
 	}
 	spew.Dump("Call response", response)
 
-	return response, nil
+	return &response, nil
 }
 
 // Call calls a service method with the given arguments (preferably a struct).
-func (sh *ServiceHost) Call(service string, method string, args any) (map[string]interface{}, *serviceError.Error) {
+func (sh *ServiceHost) Call(service string, method string, args any) (*domain.ServiceReply, *serviceError.Error) {
 	var address string
 	var port int
 
