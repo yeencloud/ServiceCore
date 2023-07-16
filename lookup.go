@@ -2,7 +2,6 @@ package servicecore
 
 import (
 	"encoding/json"
-	"github.com/davecgh/go-spew/spew"
 	"github.com/yeencloud/ServiceCore/serviceError"
 )
 
@@ -23,17 +22,12 @@ func (sh *ServiceHost) LookUp(service string, method string) (LookUpResponse, *s
 	})
 
 	if err != nil {
-		spew.Dump("Call error", err)
 		return LookUpResponse{}, err
 	}
-
-	spew.Dump("LookUp response body", data)
 
 	var response LookUpResponse
 	marshal, _ := json.Marshal(data.Data)
 	_ = json.Unmarshal(marshal, &response)
-
-	spew.Dump("LookUp response", response)
 
 	return response, nil
 }

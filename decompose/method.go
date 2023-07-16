@@ -174,6 +174,11 @@ func decomposeMethodsOfModule(typ reflect.Type) []Method {
 			continue
 		}
 
+		if argType.Kind() == reflect.Ptr {
+			log.Warn().Str("method", methodName).Msg("argument type should not be a pointer")
+			continue
+		}
+
 		// output type needs to be exported
 		replyType := methodType.Out(0)
 		if returnType := methodType.Out(1); returnType != reflect.TypeOf(&serviceError.Error{}) {

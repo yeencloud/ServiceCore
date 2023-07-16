@@ -1,6 +1,6 @@
 module github.com/yeencloud/ServiceCore
 
-go 1.21
+go 1.20
 
 require (
 	github.com/AliceDiNunno/KubernetesUtil v1.0.3
