@@ -16,13 +16,13 @@ type LookUpResponse struct {
 }
 
 func (sh *ServiceHost) LookUp(service string, method string) (LookUpResponse, *serviceError.Error) {
-	data, err := sh.Call("Galaxy", "LookUp", LookUpRequest{
+	data := sh.Call("Galaxy", "LookUp", LookUpRequest{
 		Service: service,
 		Method:  method,
 	})
 
-	if err != nil {
-		return LookUpResponse{}, err
+	if data.Error != nil && data.Error.HttpCode != 200 {
+		return LookUpResponse{}, data.Error
 	}
 
 	var response LookUpResponse

@@ -164,10 +164,10 @@ func (shs *ServiceHTTPServer) callServiceMethod() gin.HandlerFunc {
 			serr := results[1]
 
 			reply := domain.ServiceReply{
-				RequestID: request.RequestID,
-				Module:    request.Module,
-				Service:   request.Method,
-				Version:   domain.APIVersion,
+				RequestID:  request.RequestID,
+				Module:     request.Module,
+				Method:     request.Method,
+				ApiVersion: domain.APIVersion,
 			}
 
 			if serr.Type() == reflect.TypeOf(&serviceError.Error{}) && !serr.IsNil() {

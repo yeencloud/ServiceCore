@@ -9,7 +9,7 @@ import (
 
 func buildServiceReply() domain.ServiceReply {
 	return domain.ServiceReply{
-		Version: domain.APIVersion,
+		ApiVersion: domain.APIVersion,
 	}
 }
 

@@ -5,10 +5,10 @@ import (
 )
 
 type ServiceReply struct {
-	RequestID string `json:",omitempty"`
-	Module    string `json:",omitempty"`
-	Service   string `json:",omitempty"`
-	Version   Version
+	RequestID  string `json:",omitempty"`
+	Module     string `json:",omitempty"`
+	Method     string `json:",omitempty"`
+	ApiVersion Version
 
 	Error            *serviceError.Error `json:",omitempty"`
 	ValidationErrors []string            `json:",omitempty"`
