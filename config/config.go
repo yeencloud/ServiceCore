@@ -12,6 +12,8 @@ import (
 // Config is a struct that holds the configuration of the service
 type Config struct {
 	environment Environment
+	version     Version
+	repository  *Repository
 }
 
 // loadEnv loads the .env file if it exists
@@ -140,6 +142,9 @@ func NewConfig() *Config {
 	conf := Config{}
 
 	conf.loadEnv()
+	conf.GetEnvironment()
+	conf.GetVersion()
+	conf.GetRepository()
 
 	return &conf
 }
